@@ -1,3 +1,4 @@
+--update
 local Testing = false
 
 -- Vérification des alts
@@ -16,15 +17,13 @@ UserSettings().GameSettings.MasterVolume = 0
 local Crashed = false
 
 if Testing == false then
-	-- Interface utilisateur moderne
+	-- Interface utilisateur simple et compatible
 	local main = Instance.new("ScreenGui")
 	local Frame = Instance.new("Frame")
-	local UICorner = Instance.new("UICorner")
 	local TitleLabel = Instance.new("TextLabel")
 	local StatusLabel = Instance.new("TextLabel")
 	local HostLabel = Instance.new("TextLabel")
 	local InfoLabel = Instance.new("TextLabel")
-	local UIStroke = Instance.new("UIStroke")
 
 	main.Name = "AltStatusUI"
 	main.Parent = game.CoreGui
@@ -33,24 +32,19 @@ if Testing == false then
 	Frame.Parent = main
 	Frame.AnchorPoint = Vector2.new(0, 0)
 	Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+	Frame.BorderColor3 = Color3.fromRGB(0, 255, 127)
+	Frame.BorderSizePixel = 2
 	Frame.Position = UDim2.new(0, 20, 0, 20)
 	Frame.Size = UDim2.new(0, 350, 0, 150)
-
-	UICorner.Parent = Frame
-	UICorner.CornerRadius = UDim.new(0, 12)
-
-	UIStroke.Parent = Frame
-	UIStroke.Color = Color3.fromRGB(0, 255, 127)
-	UIStroke.Thickness = 2
 
 	TitleLabel.Parent = Frame
 	TitleLabel.BackgroundTransparency = 1
 	TitleLabel.Position = UDim2.new(0, 15, 0, 10)
 	TitleLabel.Size = UDim2.new(1, -30, 0, 30)
-	TitleLabel.Font = Enum.Font.GothamBold
-	TitleLabel.Text = "🤖 ALT SYSTEM ACTIVE"
+	TitleLabel.Font = Enum.Font.Gotham
+	TitleLabel.Text = "ALT SYSTEM ACTIVE"
 	TitleLabel.TextColor3 = Color3.fromRGB(0, 255, 127)
-	TitleLabel.TextScaled = true
+	TitleLabel.TextSize = 16
 	TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
 	StatusLabel.Parent = Frame
@@ -58,9 +52,9 @@ if Testing == false then
 	StatusLabel.Position = UDim2.new(0, 15, 0, 45)
 	StatusLabel.Size = UDim2.new(1, -30, 0, 20)
 	StatusLabel.Font = Enum.Font.Gotham
-	StatusLabel.Text = "✅ Alt: " .. game.Players.LocalPlayer.Name
+	StatusLabel.Text = "Alt: " .. game.Players.LocalPlayer.Name
 	StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-	StatusLabel.TextScaled = true
+	StatusLabel.TextSize = 14
 	StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
 
 	HostLabel.Parent = Frame
@@ -68,27 +62,28 @@ if Testing == false then
 	HostLabel.Position = UDim2.new(0, 15, 0, 70)
 	HostLabel.Size = UDim2.new(1, -30, 0, 20)
 	HostLabel.Font = Enum.Font.Gotham
-	HostLabel.Text = "👑 Host: " .. getgenv().HostUser
+	HostLabel.Text = "Host: " .. getgenv().HostUser
 	HostLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
-	HostLabel.TextScaled = true
+	HostLabel.TextSize = 14
 	HostLabel.TextXAlignment = Enum.TextXAlignment.Left
 
 	InfoLabel.Parent = Frame
 	InfoLabel.BackgroundTransparency = 1
 	InfoLabel.Position = UDim2.new(0, 15, 0, 95)
-	InfoLabel.Size = UDim2.new(1, -30, 0, 20)
+	InfoLabel.Size = UDim2.new(1, -30, 0, 40)
 	InfoLabel.Font = Enum.Font.Gotham
-	InfoLabel.Text = "📡 Waiting for commands... (Prefix: ?)"
+	InfoLabel.Text = "Waiting for commands...\nPrefix: ?"
 	InfoLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-	InfoLabel.TextScaled = true
+	InfoLabel.TextSize = 12
 	InfoLabel.TextXAlignment = Enum.TextXAlignment.Left
+	InfoLabel.TextYAlignment = Enum.TextYAlignment.Top
 
-	-- Animation de clignotement pour l'indicateur
+	-- Animation de clignotement pour la bordure
 	spawn(function()
 		while true do
-			UIStroke.Color = Color3.fromRGB(0, 255, 127)
+			Frame.BorderColor3 = Color3.fromRGB(0, 255, 127)
 			wait(1)
-			UIStroke.Color = Color3.fromRGB(0, 200, 100)
+			Frame.BorderColor3 = Color3.fromRGB(0, 200, 100)
 			wait(1)
 		end
 	end)
@@ -446,20 +441,58 @@ local function Initiate()
 	-- Mettre à jour l'UI quand le host rejoint
 	if game.CoreGui:FindFirstChild("AltStatusUI") then
 		local ui = game.CoreGui.AltStatusUI.Frame
-		ui.InfoLabel.Text = "🟢 Connected! Ready for commands (Prefix: ?)"
+		ui.InfoLabel.Text = "Connected! Ready for commands\nPrefix: ?"
 		ui.InfoLabel.TextColor3 = Color3.fromRGB(0, 255, 127)
 	end
 	
-	-- Gestionnaire de commandes de chat
-	Connections["OnChat"] = game.ReplicatedStorage.DefaultChatSystemChatEvents.OnMessageDoneFiltering.OnClientEvent:Connect(function(data)
- 		local Message = data.Message
-		local plr = game:service"Players"[data.FromSpeaker]
-		if plr.Name ~= getgenv().HostUser then
-			return
+	-- Gestionnaire de commandes de chat (version améliorée)
+	local function SetupChatListener()
+		-- Essayer plusieurs méthodes de capture du chat
+		local success1 = pcall(function()
+			Connections["OnChat"] = game.ReplicatedStorage.DefaultChatSystemChatEvents.OnMessageDoneFiltering.OnClientEvent:Connect(function(data)
+				local Message = data.Message
+				local plr = game:service"Players"[data.FromSpeaker]
+				if plr and plr.Name == getgenv().HostUser then
+					print("Command received from host: " .. Message) -- Debug
+					ProcessCommand(Message:lower())
+				end
+			end)
+		end)
+		
+		-- Méthode alternative si la première échoue
+		if not success1 then
+			print("Trying alternative chat method...")
+			local success2 = pcall(function()
+				-- Méthode alternative pour le chat
+				game.Players.PlayerChatted:Connect(function(chatType, player, message)
+					if player.Name == getgenv().HostUser then
+						print("Command received from host (alt method): " .. message) -- Debug
+						ProcessCommand(message:lower())
+					end
+				end)
+			end)
 		end
- 		Message = string.lower(Message)
+		
+		-- Méthode de secours avec StarterPlayer
+		spawn(function()
+			wait(2)
+			pcall(function()
+				for _, player in pairs(game.Players:GetPlayers()) do
+					if player.Name == getgenv().HostUser then
+						player.Chatted:Connect(function(message)
+							print("Command received from host (backup method): " .. message) -- Debug
+							ProcessCommand(message:lower())
+						end)
+					end
+				end
+			end)
+		end)
+	end
+	
+	-- Fonction pour traiter les commandes
+	local function ProcessCommand(Message)
 		local Args = string.split(Message, " ")
-		local AmountOfArgs = #Args
+		print("Processing command:", Message) -- Debug
 		
 		if Host and not Crashed and Variables["Player"].Character and Variables["Player"].Character:FindFirstChild("HumanoidRootPart") and Variables["Player"].Character:FindFirstChild("Humanoid") and Variables["Player"].Character.Humanoid.Health > 0 then
 			-- Commande ?drop (15k)
@@ -618,17 +651,63 @@ local function Initiate()
 				end
 			end
 		end
+	end
+	
+	-- Démarrer le listener de chat
+	SetupChatListener()
+	
+	-- Écouter les nouveaux joueurs (incluant le host qui rejoint)
+	game.Players.PlayerAdded:Connect(function(player)
+		if player.Name == getgenv().HostUser then
+			wait(1) -- Attendre que le joueur soit complètement chargé
+			player.Chatted:Connect(function(message)
+				print("Command from host (new player): " .. message) -- Debug
+				ProcessCommand(message:lower())
+			end)
+		end
 	end)
-end
-
--- Initialisation
-if Host then
-	Initiate()
 end
 
 -- Écouter l'arrivée du host
 Services["Players"].PlayerAdded:Connect(function(Player)
 	if Player.Name == Variables["HostUser"] then
+		print("Host joined the server!")
 		Initiate()
 	end
 end)
+
+-- Connexion immédiate pour le host s'il est déjà là
+if Host then
+	print("Host found in server, connecting...")
+	Host.Chatted:Connect(function(message)
+		print("Direct host chat: " .. message) -- Debug
+		if Host and not Crashed and Variables["Player"].Character and Variables["Player"].Character:FindFirstChild("HumanoidRootPart") and Variables["Player"].Character:FindFirstChild("Humanoid") and Variables["Player"].Character.Humanoid.Health > 0 then
+			-- Traiter directement la commande
+			local Message = string.lower(message)
+			local Args = string.split(Message, " ")
+			
+			-- Copier toute la logique de commande ici aussi
+			if Args[1] == "?drop" then
+				print("Executing drop command")
+				Drop(true)
+			elseif Args[1] == "?stop" then
+				Drop(false)
+			elseif Args[1] == "?reset" then
+				if Variables["Player"].Character then
+					local FULLY_LOADED_CHAR = Variables["Player"].Character:FindFirstChild("FULLY_LOADED_CHAR")
+					if FULLY_LOADED_CHAR then
+						FULLY_LOADED_CHAR.Parent = Services["RP"]
+						FULLY_LOADED_CHAR:Destroy()
+					end
+					Variables["Player"].Character:Destroy()
+				end
+				Initiate()
+			elseif Args[1] == "?bring" and #Args == 1 then
+				if Host and Host.Character and Host.Character:FindFirstChild("HumanoidRootPart") then
+					Variables["Player"].Character.HumanoidRootPart.CFrame = Host.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -1)
+				end
+			end
+		end
+	end)
+	Initiate()
+end
