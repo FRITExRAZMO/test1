@@ -16,35 +16,82 @@ UserSettings().GameSettings.MasterVolume = 0
 local Crashed = false
 
 if Testing == false then
-	-- Interface utilisateur
+	-- Interface utilisateur moderne
 	local main = Instance.new("ScreenGui")
 	local Frame = Instance.new("Frame")
-	local TextLabel = Instance.new("TextLabel")
+	local UICorner = Instance.new("UICorner")
+	local TitleLabel = Instance.new("TextLabel")
+	local StatusLabel = Instance.new("TextLabel")
+	local HostLabel = Instance.new("TextLabel")
+	local InfoLabel = Instance.new("TextLabel")
+	local UIStroke = Instance.new("UIStroke")
 
-	main.Name = "RenderScreen"
+	main.Name = "AltStatusUI"
 	main.Parent = game.CoreGui
 	main.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	main.IgnoreGuiInset = true
 
 	Frame.Parent = main
-	Frame.Active = true
-	Frame.AnchorPoint = Vector2.new(0.5, 0.5)
-	Frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-	Frame.Position = UDim2.new(0.5, 0, 0.5, 0)
-	Frame.Size = UDim2.new(1, 0, 1, 0)
+	Frame.AnchorPoint = Vector2.new(0, 0)
+	Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+	Frame.Position = UDim2.new(0, 20, 0, 20)
+	Frame.Size = UDim2.new(0, 350, 0, 150)
 
-	TextLabel.Parent = Frame
-	TextLabel.AnchorPoint = Vector2.new(0.5, 0.5)
-	TextLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-	TextLabel.BackgroundTransparency = 1.000
-	TextLabel.Position = UDim2.new(0.5, 0, 0.42, 0)
-	TextLabel.Size = UDim2.new(0, 279, 0, 34)
-	TextLabel.Font = Enum.Font.Gotham
-	TextLabel.Text = "Welcome, " .. game.Players.LocalPlayer.Name
-	TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-	TextLabel.TextScaled = false
-	TextLabel.TextSize = 19.000
-	TextLabel.TextWrapped = false
+	UICorner.Parent = Frame
+	UICorner.CornerRadius = UDim.new(0, 12)
+
+	UIStroke.Parent = Frame
+	UIStroke.Color = Color3.fromRGB(0, 255, 127)
+	UIStroke.Thickness = 2
+
+	TitleLabel.Parent = Frame
+	TitleLabel.BackgroundTransparency = 1
+	TitleLabel.Position = UDim2.new(0, 15, 0, 10)
+	TitleLabel.Size = UDim2.new(1, -30, 0, 30)
+	TitleLabel.Font = Enum.Font.GothamBold
+	TitleLabel.Text = "🤖 ALT SYSTEM ACTIVE"
+	TitleLabel.TextColor3 = Color3.fromRGB(0, 255, 127)
+	TitleLabel.TextScaled = true
+	TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+	StatusLabel.Parent = Frame
+	StatusLabel.BackgroundTransparency = 1
+	StatusLabel.Position = UDim2.new(0, 15, 0, 45)
+	StatusLabel.Size = UDim2.new(1, -30, 0, 20)
+	StatusLabel.Font = Enum.Font.Gotham
+	StatusLabel.Text = "✅ Alt: " .. game.Players.LocalPlayer.Name
+	StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	StatusLabel.TextScaled = true
+	StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+	HostLabel.Parent = Frame
+	HostLabel.BackgroundTransparency = 1
+	HostLabel.Position = UDim2.new(0, 15, 0, 70)
+	HostLabel.Size = UDim2.new(1, -30, 0, 20)
+	HostLabel.Font = Enum.Font.Gotham
+	HostLabel.Text = "👑 Host: " .. getgenv().HostUser
+	HostLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
+	HostLabel.TextScaled = true
+	HostLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+	InfoLabel.Parent = Frame
+	InfoLabel.BackgroundTransparency = 1
+	InfoLabel.Position = UDim2.new(0, 15, 0, 95)
+	InfoLabel.Size = UDim2.new(1, -30, 0, 20)
+	InfoLabel.Font = Enum.Font.Gotham
+	InfoLabel.Text = "📡 Waiting for commands... (Prefix: ?)"
+	InfoLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+	InfoLabel.TextScaled = true
+	InfoLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+	-- Animation de clignotement pour l'indicateur
+	spawn(function()
+		while true do
+			UIStroke.Color = Color3.fromRGB(0, 255, 127)
+			wait(1)
+			UIStroke.Color = Color3.fromRGB(0, 200, 100)
+			wait(1)
+		end
+	end)
 
 	-- Attendre le chargement complet du jeu
 	if not game:IsLoaded() then
@@ -59,9 +106,8 @@ if Testing == false then
 		vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
 	end)
 
-	-- Optimisation des performances
-	game:GetService("RunService"):Set3dRenderingEnabled(false)
-	setfpscap(5)
+	-- Optimisation des performances (mais garde le rendu 3D actif)
+	setfpscap(30)
 end
 
 -- Chargement de l'anti-cheat bypass
@@ -395,6 +441,13 @@ local function Initiate()
 	for Index, Connection in pairs(Connections) do
 		Index[Connection] = nil
 		Connection:Disconnect()
+	end
+	
+	-- Mettre à jour l'UI quand le host rejoint
+	if game.CoreGui:FindFirstChild("AltStatusUI") then
+		local ui = game.CoreGui.AltStatusUI.Frame
+		ui.InfoLabel.Text = "🟢 Connected! Ready for commands (Prefix: ?)"
+		ui.InfoLabel.TextColor3 = Color3.fromRGB(0, 255, 127)
 	end
 	
 	-- Gestionnaire de commandes de chat
